@@ -199,17 +199,53 @@ public:
 		Expr *left = bop->getLHS();
 		Expr *right = bop->getRHS();
 
+		int val = 0;
 		if (bop->isAssignmentOp())
 		{
-			int val = mStack.back().getStmtVal(right);
+			val = mStack.back().getStmtVal(right);
 			mStack.back().bindStmt(left, val);
-			mStack.back().bindStmt(bop, val);
 			if (DeclRefExpr *declexpr = dyn_cast<DeclRefExpr>(left))
 			{
 				Decl *decl = declexpr->getFoundDecl();
 				mStack.back().bindDecl(decl, val);
 			}
 		}
+		else if (bop->isAdditiveOp())
+		{
+			if (bop->getOpcode() == BO_Add)
+				val = mStack.back().getStmtVal(left) + mStack.back().getStmtVal(right);
+			else if (bop->getOpcode() == BO_Sub)
+				val = mStack.back().getStmtVal(left) - mStack.back().getStmtVal(right);
+		}
+		else if (bop->isMultiplicativeOp())
+		{
+			if (bop->getOpcode() == BO_Mul)
+				val = mStack.back().getStmtVal(left) * mStack.back().getStmtVal(right);
+			else if (bop->getOpcode() == BO_Div)
+				val = mStack.back().getStmtVal(left) / mStack.back().getStmtVal(right);
+			else if (bop->getOpcode() == BO_Rem)
+				val = mStack.back().getStmtVal(left) % mStack.back().getStmtVal(right);
+			mStack.back().bindStmt(bop, val);
+		}
+		else if (bop->isRelationalOp())
+		{
+			if (bop->getOpcode() == BO_LT)
+				val = mStack.back().getStmtVal(left) < mStack.back().getStmtVal(right);
+			else if (bop->getOpcode() == BO_GT)
+				val = mStack.back().getStmtVal(left) > mStack.back().getStmtVal(right);
+			else if (bop->getOpcode() == BO_LE)
+				val = mStack.back().getStmtVal(left) <= mStack.back().getStmtVal(right);
+			else if (bop->getOpcode() == BO_GE)
+				val = mStack.back().getStmtVal(left) >= mStack.back().getStmtVal(right);
+		}
+		else if (bop->isEqualityOp())
+		{
+			if (bop->getOpcode() == BO_EQ)
+				val = mStack.back().getStmtVal(left) == mStack.back().getStmtVal(right);
+			else if (bop->getOpcode() == BO_NE)
+				val = mStack.back().getStmtVal(left) != mStack.back().getStmtVal(right);
+		}
+		mStack.back().bindStmt(bop, val);
 	}
 
 	void decl(DeclStmt *declstmt)
