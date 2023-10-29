@@ -56,6 +56,9 @@ endforeach()
 set(extest_data
   "test010\;^10\n$"
   "test011\;^10\n$"
+  "test012\;^10\n$"
+  "test013\;^10\n$"
+  "test014\;^10\n$"
 )
 
 foreach(test_info ${extest_data})

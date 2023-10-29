@@ -11,57 +11,6 @@
 
 using namespace clang;
 
-class StackFrame
-{
-	/// StackFrame maps Variable Declaration to Value
-	/// Which are either integer or addresses (also represented using an Integer value)
-	std::map<Decl *, int> mVars;
-	std::map<Stmt *, int> mExprs;
-	/// The current stmt
-	Stmt *mPC;
-
-public:
-	StackFrame() : mVars(), mExprs(), mPC()
-	{
-	}
-
-	void bindDecl(Decl *decl, int val)
-	{
-		mVars[decl] = val;
-	}
-
-	bool hasDecl(Decl *decl)
-	{
-		return mVars.find(decl) != mVars.end();
-	}
-
-	int getDeclVal(Decl *decl)
-	{
-		assert(mVars.find(decl) != mVars.end());
-		return mVars.find(decl)->second;
-	}
-
-	void bindStmt(Stmt *stmt, int val)
-	{
-		mExprs[stmt] = val;
-	}
-
-	int getStmtVal(Stmt *stmt)
-	{
-		assert(mExprs.find(stmt) != mExprs.end());
-		return mExprs[stmt];
-	}
-
-	void setPC(Stmt *stmt)
-	{
-		mPC = stmt;
-	}
-	Stmt *getPC()
-	{
-		return mPC;
-	}
-};
-
 /// Heap maps address to a value
 class Heap
 {
@@ -123,6 +72,63 @@ public:
 	}
 };
 
+class StackFrame
+{
+	/// StackFrame maps Variable Declaration to Value
+	/// Which are either integer or addresses (also represented using an Integer value)
+	std::map<Decl *, int> mVars;
+	std::map<Stmt *, int> mExprs;
+	/// The current stmt
+	Stmt *mPC;
+	Heap *mHeap;
+
+public:
+	StackFrame(Heap *mHeap) : mVars(), mExprs(), mPC(), mHeap(mHeap)
+	{
+	}
+
+	void initDecl(Decl *decl, int val)
+	{
+		mVars[decl] = val;
+	}
+
+	void bindDecl(Decl *decl, int val)
+	{
+		if (mVars.find(decl) == mVars.end())
+			mHeap->bindDecl(decl, val);
+		else
+			mVars[decl] = val;
+	}
+
+	int getDeclVal(Decl *decl)
+	{
+		if (mVars.find(decl) == mVars.end())
+			return mHeap->getDeclVal(decl);
+		else
+			return mVars.find(decl)->second;
+	}
+
+	void bindStmt(Stmt *stmt, int val)
+	{
+		mExprs[stmt] = val;
+	}
+
+	int getStmtVal(Stmt *stmt)
+	{
+		assert(mExprs.find(stmt) != mExprs.end());
+		return mExprs[stmt];
+	}
+
+	void setPC(Stmt *stmt)
+	{
+		mPC = stmt;
+	}
+	Stmt *getPC()
+	{
+		return mPC;
+	}
+};
+
 class Environment
 {
 	std::vector<StackFrame> mStack;
@@ -171,12 +177,10 @@ public:
 					}
 				}
 				else
-				{
 					mHeap.bindDecl(vdecl, 0);
-				}
 			}
 		}
-		mStack.push_back(StackFrame());
+		mStack.push_back(StackFrame(&mHeap));
 	}
 
 	FunctionDecl *getEntry()
@@ -199,6 +203,7 @@ public:
 		{
 			int val = mStack.back().getStmtVal(right);
 			mStack.back().bindStmt(left, val);
+			mStack.back().bindStmt(bop, val);
 			if (DeclRefExpr *declexpr = dyn_cast<DeclRefExpr>(left))
 			{
 				Decl *decl = declexpr->getFoundDecl();
@@ -219,12 +224,10 @@ public:
 				{
 					Expr *expr = vardecl->getInit();
 					int val = mStack.back().getStmtVal(expr);
-					mStack.back().bindDecl(vardecl, val);
+					mStack.back().initDecl(vardecl, val);
 				}
 				else
-				{
-					mStack.back().bindDecl(vardecl, 0);
-				}
+					mStack.back().initDecl(vardecl, 0);
 			}
 		}
 	}
@@ -236,13 +239,7 @@ public:
 		{
 			Decl *decl = declref->getFoundDecl();
 
-			int val;
-			if (mStack.back().hasDecl(decl))
-			{
-				val = mStack.back().getDeclVal(decl);
-			} else {
-				val = mHeap.getDeclVal(decl);
-			}
+			int val = mStack.back().getDeclVal(decl);
 			mStack.back().bindStmt(declref, val);
 		}
 	}
@@ -259,7 +256,7 @@ public:
 	}
 
 	/// !TODO Support Function Call
-	void call(CallExpr *callexpr)
+	Stmt *call(CallExpr *callexpr)
 	{
 		mStack.back().setPC(callexpr);
 		int val = 0;
@@ -270,16 +267,45 @@ public:
 			scanf("%d", &val);
 
 			mStack.back().bindStmt(callexpr, val);
+			return nullptr;
 		}
 		else if (callee == mOutput)
 		{
 			Expr *decl = callexpr->getArg(0);
 			val = mStack.back().getStmtVal(decl);
 			llvm::errs() << val;
+			return nullptr;
 		}
 		else
 		{
 			/// You could add your code here for Function call Return
+			StackFrame stack(&mHeap);
+			for (int i = 0; i < callexpr->getNumArgs(); i++)
+			{
+				Expr *arg = callexpr->getArg(i);
+				int val = mStack.back().getStmtVal(arg);
+				ParmVarDecl *param = callee->getParamDecl(i);
+				stack.initDecl(param, val);
+			}
+			mStack.push_back(stack);
+			return callee->getBody();
+		}
+	}
+
+	void ret(ReturnStmt *retstmt)
+	{
+		int val = 0;
+		if (retstmt)
+		{
+			if (Expr *expr = retstmt->getRetValue())
+			{
+				val = mStack.back().getStmtVal(expr);
+			}
+		}
+		mStack.pop_back();
+		if (!mStack.empty())
+		{
+			mStack.back().bindStmt(mStack.back().getPC(), val);
 		}
 	}
 };

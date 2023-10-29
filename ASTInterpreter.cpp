@@ -15,46 +15,79 @@ class InterpreterVisitor : public EvaluatedExprVisitor<InterpreterVisitor>
 {
 public:
    explicit InterpreterVisitor(const ASTContext &context, Environment *env)
-       : EvaluatedExprVisitor(context), mEnv(env) {}
+       : EvaluatedExprVisitor(context), mEnv(env), isReturned(false) {}
    virtual ~InterpreterVisitor() {}
 
    virtual void VisitIntegerLiteral(IntegerLiteral *literal)
    {
+      if (isReturned)
+         return;
       mEnv->intliteral(literal);
    }
 
    virtual void VisitBinaryOperator(BinaryOperator *bop)
    {
+      if (isReturned)
+         return;
       VisitStmt(bop);
       mEnv->binop(bop);
    }
 
    virtual void VisitDeclRefExpr(DeclRefExpr *expr)
    {
+      if (isReturned)
+         return;
+
       VisitStmt(expr);
       mEnv->declref(expr);
    }
 
    virtual void VisitCastExpr(CastExpr *expr)
    {
+      if (isReturned)
+         return;
       VisitStmt(expr);
       mEnv->cast(expr);
    }
 
    virtual void VisitCallExpr(CallExpr *call)
    {
+      if (isReturned)
+         return;
       VisitStmt(call);
-      mEnv->call(call);
+      if (Stmt *body = mEnv->call(call))
+      {
+         VisitStmt(body);
+         if (!isReturned)
+         {
+            mEnv->ret(nullptr);
+            // mStack.pop_back();
+            // mStack.back().bindStmt(mStack.back().getPC(), 0);
+         }
+         isReturned = false;
+      }
    }
 
    virtual void VisitDeclStmt(DeclStmt *declstmt)
    {
+      if (isReturned)
+         return;
       VisitStmt(declstmt);
       mEnv->decl(declstmt);
    }
 
+   virtual void VisitReturnStmt(ReturnStmt *retstmt)
+   {
+      if (isReturned)
+         return;
+      VisitStmt(retstmt);
+      mEnv->ret(retstmt);
+      isReturned = true;
+   }
+
 private:
    Environment *mEnv;
+   bool isReturned;
 };
 
 class InterpreterConsumer : public ASTConsumer
