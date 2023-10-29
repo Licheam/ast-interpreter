@@ -143,7 +143,16 @@ public:
 			Decl *decl = *it;
 			if (VarDecl *vardecl = dyn_cast<VarDecl>(decl))
 			{
-				mStack.back().bindDecl(vardecl, 0);
+				if (vardecl->hasInit())
+				{
+					Expr *expr = vardecl->getInit();
+					int val = mStack.back().getStmtVal(expr);
+					mStack.back().bindDecl(vardecl, val);
+				}
+				else
+				{
+					mStack.back().bindDecl(vardecl, 0);
+				}
 			}
 		}
 	}
