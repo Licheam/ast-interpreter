@@ -195,7 +195,15 @@ public:
 		mStack.back().bindStmt(literal, literal->getValue().getSExtValue());
 	}
 
-	/// !TODO Support comparison operation
+	void unop(UnaryOperator *uop)
+	{
+		Expr *expr = uop->getSubExpr();
+		int val = mStack.back().getStmtVal(expr);
+		if (uop->getOpcode() == UO_Minus)
+			val = -val;
+		mStack.back().bindStmt(uop, val);
+	}
+
 	void binop(BinaryOperator *bop)
 	{
 		Expr *left = bop->getLHS();
@@ -355,5 +363,10 @@ public:
 			return ifstmt->getThen();
 		else
 			return ifstmt->getElse();
+	}
+
+	int getStmtVal(Stmt *stmt)
+	{
+		return mStack.back().getStmtVal(stmt);
 	}
 };

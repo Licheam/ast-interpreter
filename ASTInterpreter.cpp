@@ -25,6 +25,14 @@ public:
       mEnv->intliteral(literal);
    }
 
+   virtual void VisitUnaryOperator(UnaryOperator *uop)
+   {
+      if (isReturned)
+         return;
+      VisitStmt(uop);
+      mEnv->unop(uop);
+   }
+
    virtual void VisitBinaryOperator(BinaryOperator *bop)
    {
       if (isReturned)
@@ -90,6 +98,32 @@ public:
       if (Stmt *body = mEnv->ifel(ifstmt))
       {
          Visit(body);
+      }
+   }
+
+   virtual void VisitWhileStmt(WhileStmt *whilestmt)
+   {
+      if (isReturned)
+         return;
+      Visit(whilestmt->getCond());
+      while (mEnv->getStmtVal(whilestmt->getCond()))
+      {
+         Visit(whilestmt->getBody());
+         if (isReturned)
+            return;
+         Visit(whilestmt->getCond());
+      }
+   }
+
+   virtual void VisitForStmt(ForStmt *forstmt)
+   {
+      if (isReturned)
+         return;
+      for (Visit(forstmt->getInit()), Visit(forstmt->getCond()); mEnv->getStmtVal(forstmt->getCond()); Visit(forstmt->getInc()), Visit(forstmt->getCond()))
+      {
+         Visit(forstmt->getBody());
+         if (isReturned)
+            return;
       }
    }
 

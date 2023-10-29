@@ -42,6 +42,22 @@ set(test_data
   "test01\;^10\n$"
   "test02\;^20\n$"
   "test03\;^200\n$"
+  "test04\;^10\n$"
+  "test05\;^10\n$"
+  "test06\;^20\n$"
+  "test07\;^10\n$"
+  "test08\;^20\n$"
+  "test09\;^20\n$"
+  "test10\;^5\n$"
+  "test11\;^100\n$"
+  "test12\;^4\n$"
+  "test13\;^20\n$"
+  "test14\;^12\n$"
+  "test15\;^-8\n$"
+  "test16\;^30\n$"
+  "test17\;^10\n$"
+  "test18\;^1020\n$"
+  "test19\;^1020\n$"
 )
 
 foreach(test_info ${test_data})
