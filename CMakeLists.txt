@@ -40,6 +40,8 @@ set_tests_properties(test PROPERTIES
 set(test_data
   "test00\;^100\n$"
   "test01\;^10\n$"
+  "test02\;^20\n$"
+  "test03\;^200\n$"
 )
 
 foreach(test_info ${test_data})
