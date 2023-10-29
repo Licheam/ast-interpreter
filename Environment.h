@@ -352,12 +352,8 @@ public:
 		Expr *cond = ifstmt->getCond();
 		int val = mStack.back().getStmtVal(cond);
 		if (val)
-		{
 			return ifstmt->getThen();
-		}
 		else
-		{
 			return ifstmt->getElse();
-		}
 	}
 };

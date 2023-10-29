@@ -3,17 +3,16 @@ extern void * MALLOC(int);
 extern void FREE(void *);
 extern void PRINT(int);
 
-int b=1000000;
+int b=5;
+int f(int x) {
+  if(x>0)
+    return f(x-1)+1;
+  else
+    return 0;
+}
 int main() {
   PRINT(b);
-  if(b>5) {
-    b = 5;
-  } else if (b>3) {
-    b = 3;
-  } else {
-    b = 1;
-  }
-  PRINT(b);
+  PRINT(f(b));
 }
 
-#1000005
+#55

@@ -37,7 +37,6 @@ public:
    {
       if (isReturned)
          return;
-
       VisitStmt(expr);
       mEnv->declref(expr);
    }
@@ -61,8 +60,6 @@ public:
          if (!isReturned)
          {
             mEnv->ret(nullptr);
-            // mStack.pop_back();
-            // mStack.back().bindStmt(mStack.back().getPC(), 0);
          }
          isReturned = false;
       }
@@ -92,8 +89,22 @@ public:
       Visit(ifstmt->getCond());
       if (Stmt *body = mEnv->ifel(ifstmt))
       {
-         VisitStmt(body);
+         Visit(body);
       }
+   }
+
+   virtual void VisitStmt(Stmt *stmt)
+   {
+      if (isReturned)
+         return;
+      EvaluatedExprVisitor::VisitStmt(stmt);
+   }
+
+   virtual void Visit(Stmt *stmt)
+   {
+      if (isReturned)
+         return;
+      EvaluatedExprVisitor::Visit(stmt);
    }
 
 private:

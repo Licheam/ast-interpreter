@@ -39,6 +39,7 @@ set_tests_properties(test PROPERTIES
 
 set(test_data
   "test00\;^100\n$"
+  "test01\;^10\n$"
 )
 
 foreach(test_info ${test_data})
@@ -61,6 +62,7 @@ set(extest_data
   "test014\;^10\n$"
   "test015\;^200\n$"
   "test016\;^10000005\n$"
+  "test017\;^55\n$"
 )
 
 foreach(test_info ${extest_data})
