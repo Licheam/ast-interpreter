@@ -62,7 +62,7 @@ public:
 		{
 			int addr = Malloc(sizeof(int));
 		}
-		Update(get(mVars[decl]), val);
+		Update(mVars[decl], val);
 	}
 
 	int getDeclVal(Decl *decl)
@@ -95,7 +95,9 @@ public:
 	void bindDecl(Decl *decl, int val)
 	{
 		if (mVars.find(decl) == mVars.end())
+		{
 			mHeap->bindDecl(decl, val);
+		}
 		else
 			mVars[decl] = val;
 	}
@@ -342,6 +344,20 @@ public:
 		if (!mStack.empty())
 		{
 			mStack.back().bindStmt(mStack.back().getPC(), val);
+		}
+	}
+
+	Stmt *ifel(IfStmt *ifstmt)
+	{
+		Expr *cond = ifstmt->getCond();
+		int val = mStack.back().getStmtVal(cond);
+		if (val)
+		{
+			return ifstmt->getThen();
+		}
+		else
+		{
+			return ifstmt->getElse();
 		}
 	}
 };

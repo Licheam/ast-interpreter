@@ -85,6 +85,17 @@ public:
       isReturned = true;
    }
 
+   virtual void VisitIfStmt(IfStmt *ifstmt)
+   {
+      if (isReturned)
+         return;
+      Visit(ifstmt->getCond());
+      if (Stmt *body = mEnv->ifel(ifstmt))
+      {
+         VisitStmt(body);
+      }
+   }
+
 private:
    Environment *mEnv;
    bool isReturned;
