@@ -18,26 +18,35 @@ public:
        : EvaluatedExprVisitor(context), mEnv(env) {}
    virtual ~InterpreterVisitor() {}
 
+   virtual void VisitIntegerLiteral(IntegerLiteral *literal)
+   {
+      mEnv->intliteral(literal);
+   }
+
    virtual void VisitBinaryOperator(BinaryOperator *bop)
    {
       VisitStmt(bop);
       mEnv->binop(bop);
    }
+
    virtual void VisitDeclRefExpr(DeclRefExpr *expr)
    {
       VisitStmt(expr);
       mEnv->declref(expr);
    }
+
    virtual void VisitCastExpr(CastExpr *expr)
    {
       VisitStmt(expr);
       mEnv->cast(expr);
    }
+
    virtual void VisitCallExpr(CallExpr *call)
    {
       VisitStmt(call);
       mEnv->call(call);
    }
+
    virtual void VisitDeclStmt(DeclStmt *declstmt)
    {
       mEnv->decl(declstmt);

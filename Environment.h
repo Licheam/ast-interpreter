@@ -29,20 +29,24 @@ public:
 	{
 		mVars[decl] = val;
 	}
+
 	int getDeclVal(Decl *decl)
 	{
 		assert(mVars.find(decl) != mVars.end());
 		return mVars.find(decl)->second;
 	}
+
 	void bindStmt(Stmt *stmt, int val)
 	{
 		mExprs[stmt] = val;
 	}
+
 	int getStmtVal(Stmt *stmt)
 	{
 		assert(mExprs.find(stmt) != mExprs.end());
 		return mExprs[stmt];
 	}
+
 	void setPC(Stmt *stmt)
 	{
 		mPC = stmt;
@@ -108,6 +112,11 @@ public:
 		return mEntry;
 	}
 
+	void intliteral(IntegerLiteral *literal)
+	{
+		mStack.back().bindStmt(literal, literal->getValue().getSExtValue());
+	}
+
 	/// !TODO Support comparison operation
 	void binop(BinaryOperator *bop)
 	{
@@ -138,6 +147,7 @@ public:
 			}
 		}
 	}
+
 	void declref(DeclRefExpr *declref)
 	{
 		mStack.back().setPC(declref);
