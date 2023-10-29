@@ -30,6 +30,11 @@ public:
 		mVars[decl] = val;
 	}
 
+	bool hasDecl(Decl *decl)
+	{
+		return mVars.find(decl) != mVars.end();
+	}
+
 	int getDeclVal(Decl *decl)
 	{
 		assert(mVars.find(decl) != mVars.end());
@@ -58,19 +63,70 @@ public:
 };
 
 /// Heap maps address to a value
-/*
-class Heap {
+class Heap
+{
+	/// Heap maps Variable Declaration to Addresses (represented using an Integer value)
+	std::map<Decl *, int> mVars;
+	/// Heap maps Addresses to Values
+	std::vector<char> mValues;
+	/// FreeList maps Addresses to Intervals
+	std::vector<std::pair<int, int>> mFreeList;
+
 public:
-   int Malloc(int size) ;
-   void Free (int addr) ;
-   void Update(int addr, int val) ;
-   int get(int addr);
+	Heap() : mVars(), mValues(), mFreeList()
+	{
+	}
+
+	int Malloc(int size)
+	{
+		for (int i = 0; i < mFreeList.size(); i++)
+		{
+			if (mFreeList[i].second - mFreeList[i].first >= size)
+			{
+				int addr = mFreeList[i].first;
+				mFreeList[i].first += size;
+				if (mFreeList[i].first == mFreeList[i].second)
+				{
+					mFreeList.erase(mFreeList.begin() + i);
+				}
+				return addr;
+			}
+		}
+		int addr = mValues.size();
+		mValues.resize(mValues.size() + size);
+		return addr;
+	}
+	//    void Free (int addr) ;
+	void Update(int addr, int val)
+	{
+		*(int *)&mValues[addr] = val;
+	}
+
+	int get(int addr)
+	{
+		return *(int *)&mValues[addr];
+	}
+
+	void bindDecl(Decl *decl, int val)
+	{
+		if (mVars.find(decl) == mVars.end())
+		{
+			int addr = Malloc(sizeof(int));
+		}
+		Update(get(mVars[decl]), val);
+	}
+
+	int getDeclVal(Decl *decl)
+	{
+		assert(mVars.find(decl) != mVars.end());
+		return get(mVars[decl]);
+	}
 };
-*/
 
 class Environment
 {
 	std::vector<StackFrame> mStack;
+	Heap mHeap;
 
 	FunctionDecl *mFree; /// Declartions to the built-in functions
 	FunctionDecl *mMalloc;
@@ -81,7 +137,7 @@ class Environment
 
 public:
 	/// Get the declartions to the built-in functions
-	Environment() : mStack(), mFree(NULL), mMalloc(NULL), mInput(NULL), mOutput(NULL), mEntry(NULL)
+	Environment() : mStack(), mHeap(), mFree(NULL), mMalloc(NULL), mInput(NULL), mOutput(NULL), mEntry(NULL)
 	{
 	}
 
@@ -102,6 +158,22 @@ public:
 					mOutput = fdecl;
 				else if (fdecl->getName().equals("main"))
 					mEntry = fdecl;
+			}
+			else if (VarDecl *vdecl = dyn_cast<VarDecl>(*i))
+			{
+				if (vdecl->hasInit())
+				{
+					Expr *expr = vdecl->getInit();
+					if (IntegerLiteral *literal = dyn_cast<IntegerLiteral>(expr))
+					{
+						int val = literal->getValue().getSExtValue();
+						mHeap.bindDecl(vdecl, val);
+					}
+				}
+				else
+				{
+					mHeap.bindDecl(vdecl, 0);
+				}
 			}
 		}
 		mStack.push_back(StackFrame());
@@ -164,7 +236,13 @@ public:
 		{
 			Decl *decl = declref->getFoundDecl();
 
-			int val = mStack.back().getDeclVal(decl);
+			int val;
+			if (mStack.back().hasDecl(decl))
+			{
+				val = mStack.back().getDeclVal(decl);
+			} else {
+				val = mHeap.getDeclVal(decl);
+			}
 			mStack.back().bindStmt(declref, val);
 		}
 	}

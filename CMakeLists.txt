@@ -26,3 +26,46 @@ target_link_libraries(ast-interpreter
 
 install(TARGETS ast-interpreter
   RUNTIME DESTINATION bin)
+
+enable_testing()
+
+add_test(NAME test
+  COMMAND bash -c "echo 100 | $<TARGET_FILE:ast-interpreter> \"$(cat ${CMAKE_CURRENT_SOURCE_DIR}/tests/test.c)\""
+)
+
+set_tests_properties(test PROPERTIES
+  PASS_REGULAR_EXPRESSION "^Please Input an Integer Value : 100\n$"
+)
+
+set(test_data
+  "test00\;^100\n$"
+)
+
+foreach(test_info ${test_data})
+  list(GET test_info 0 test_name)
+  list(GET test_info 1 test_val)
+  add_test(
+    NAME ${test_name}
+    COMMAND bash -c "$<TARGET_FILE:ast-interpreter> \"$(cat ${CMAKE_CURRENT_SOURCE_DIR}/tests/${test_name}.c)\""
+  )
+  set_tests_properties(${test} PROPERTIES
+    PASS_REGULAR_EXPRESSION ${test_val}
+  )
+endforeach()
+
+set(extest_data
+  "test010\;^10\n$"
+  "test011\;^10\n$"
+)
+
+foreach(test_info ${extest_data})
+  list(GET test_info 0 test_name)
+  list(GET test_info 1 test_val)
+  add_test(
+    NAME ${test_name}
+    COMMAND bash -c "$<TARGET_FILE:ast-interpreter> \"$(cat ${CMAKE_CURRENT_SOURCE_DIR}/extests/${test_name}.c)\""
+  )
+  set_tests_properties(${test} PROPERTIES
+    PASS_REGULAR_EXPRESSION ${test_val}
+  )
+endforeach()
