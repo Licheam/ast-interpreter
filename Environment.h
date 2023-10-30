@@ -20,6 +20,8 @@ class Heap
 	std::vector<char> mValues;
 	/// FreeList maps Addresses to Intervals
 	std::vector<std::pair<int, int>> mFreeList;
+	/// OccupiedList maps Addresses to Interval Size
+	std::map<int, int> mOccupied;
 
 public:
 	Heap() : mVars(), mValues(), mFreeList()
@@ -35,17 +37,51 @@ public:
 				int addr = mFreeList[i].first;
 				mFreeList[i].first += size;
 				if (mFreeList[i].first == mFreeList[i].second)
-				{
 					mFreeList.erase(mFreeList.begin() + i);
-				}
+				mOccupied[addr] = size;
 				return addr;
 			}
 		}
 		int addr = mValues.size();
 		mValues.resize(mValues.size() + size);
+		mOccupied[addr] = size;
 		return addr;
 	}
-	//    void Free (int addr) ;
+	void Free(int addr)
+	{
+		assert(mOccupied.find(addr) != mOccupied.end());
+		int size = mOccupied[addr];
+		mOccupied.erase(addr);
+		for (int i = 0; i < mFreeList.size(); i++)
+		{
+			if (mFreeList[i].first == addr + size)
+			{
+				mFreeList[i].first = addr;
+				return;
+			}
+			else if (mFreeList[i].second == addr)
+			{
+				mFreeList[i].second = addr + size;
+				if (addr+size == mValues.size())
+				{
+					mValues.resize(mFreeList.back().second-mFreeList.back().first);
+					mFreeList.pop_back();
+				}
+				return;
+			}
+			else if (mFreeList[i].first > addr + size)
+			{
+				mFreeList.insert(mFreeList.begin() + i, std::make_pair(addr, addr + size));
+				return;
+			}
+		}
+		mFreeList.push_back(std::make_pair(addr, addr + size));
+		if (addr+size == mValues.size())
+		{
+			mValues.resize(mFreeList.back().second-mFreeList.back().first);
+			mFreeList.pop_back();
+		}
+	}
 	void Update(int addr, int val)
 	{
 		*(int *)&mValues[addr] = val;
@@ -430,7 +466,7 @@ public:
 		{
 			Expr *expr = callexpr->getArg(0);
 			val = mStack.back().getStmtVal(expr);
-			// mHeap.Free(val) ;
+			mHeap.Free(val);
 			return nullptr;
 		}
 		else
