@@ -103,6 +103,11 @@ public:
 			mVars[decl] = val;
 	}
 
+	bool hasDeclVal(Decl *decl)
+	{
+		return mVars.find(decl) != mVars.end();
+	}
+
 	int getDeclVal(Decl *decl)
 	{
 		if (mVars.find(decl) == mVars.end())
@@ -114,6 +119,11 @@ public:
 	void bindStmt(Stmt *stmt, int val)
 	{
 		mExprs[stmt] = val;
+	}
+
+	bool hasStmtVal(Stmt *stmt)
+	{
+		return mExprs.find(stmt) != mExprs.end();
 	}
 
 	int getStmtVal(Stmt *stmt)
@@ -220,7 +230,7 @@ public:
 		int val = mStack.back().getStmtVal(expr);
 		if (uop->getOpcode() == UO_Minus)
 			val = -val;
-		else if(uop->getOpcode() == UO_Deref)
+		else if (uop->getOpcode() == UO_Deref)
 			val = mHeap.get(val);
 		mStack.back().bindStmt(uop, val);
 	}
@@ -251,7 +261,8 @@ public:
 			else if (UnaryOperator *unaryop = dyn_cast<UnaryOperator>(left))
 			{
 				assert(unaryop->getOpcode() == UO_Deref);
-				int addr = mStack.back().getStmtVal(left);
+				Expr *expr = unaryop->getSubExpr();
+				int addr = mStack.back().getStmtVal(expr);
 				mHeap.Update(addr, val);
 			}
 		}
@@ -356,6 +367,15 @@ public:
 			int addr = mStack.back().getDeclVal(decl);
 			mStack.back().bindStmt(declref, addr);
 		}
+		else if (declref->getType()->isPointerType())
+		{
+			Decl *decl = declref->getFoundDecl();
+			if (mStack.back().hasDeclVal(decl))
+			{
+				int addr = mStack.back().getDeclVal(decl);
+				mStack.back().bindStmt(declref, addr);
+			}
+		}
 	}
 
 	void cast(CastExpr *castexpr)
@@ -369,15 +389,9 @@ public:
 		}
 		else if (castexpr->getType()->isPointerType())
 		{
-			if (castexpr->getSubExpr()->getType()->isArrayType())
+			Expr *expr = castexpr->getSubExpr();
+			if (mStack.back().hasStmtVal(expr))
 			{
-				Expr *expr = castexpr->getSubExpr();
-				int addr = mStack.back().getStmtVal(expr);
-				mStack.back().bindStmt(castexpr, addr);
-			}
-			else if (castexpr->getSubExpr()->getType()->isVoidPointerType())
-			{
-				Expr *expr = castexpr->getSubExpr();
 				int addr = mStack.back().getStmtVal(expr);
 				mStack.back().bindStmt(castexpr, addr);
 			}
