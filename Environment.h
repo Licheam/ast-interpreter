@@ -308,40 +308,65 @@ public:
 				mHeap.Update(addr, val);
 			}
 		}
-		else if (bop->isAdditiveOp())
+		else
 		{
-			if (bop->getOpcode() == BO_Add)
-				val = mStack.back().getStmtVal(left) + mStack.back().getStmtVal(right);
-			else if (bop->getOpcode() == BO_Sub)
-				val = mStack.back().getStmtVal(left) - mStack.back().getStmtVal(right);
-		}
-		else if (bop->isMultiplicativeOp())
-		{
-			if (bop->getOpcode() == BO_Mul)
-				val = mStack.back().getStmtVal(left) * mStack.back().getStmtVal(right);
-			else if (bop->getOpcode() == BO_Div)
-				val = mStack.back().getStmtVal(left) / mStack.back().getStmtVal(right);
-			else if (bop->getOpcode() == BO_Rem)
-				val = mStack.back().getStmtVal(left) % mStack.back().getStmtVal(right);
-			mStack.back().bindStmt(bop, val);
-		}
-		else if (bop->isRelationalOp())
-		{
-			if (bop->getOpcode() == BO_LT)
-				val = mStack.back().getStmtVal(left) < mStack.back().getStmtVal(right);
-			else if (bop->getOpcode() == BO_GT)
-				val = mStack.back().getStmtVal(left) > mStack.back().getStmtVal(right);
-			else if (bop->getOpcode() == BO_LE)
-				val = mStack.back().getStmtVal(left) <= mStack.back().getStmtVal(right);
-			else if (bop->getOpcode() == BO_GE)
-				val = mStack.back().getStmtVal(left) >= mStack.back().getStmtVal(right);
-		}
-		else if (bop->isEqualityOp())
-		{
-			if (bop->getOpcode() == BO_EQ)
-				val = mStack.back().getStmtVal(left) == mStack.back().getStmtVal(right);
-			else if (bop->getOpcode() == BO_NE)
-				val = mStack.back().getStmtVal(left) != mStack.back().getStmtVal(right);
+			while (isa<ParenExpr>(left))
+			{
+				ParenExpr *paren = dyn_cast<ParenExpr>(left);
+				left = paren->getSubExpr();
+			}
+			while (isa<ParenExpr>(right))
+			{
+				ParenExpr *paren = dyn_cast<ParenExpr>(right);
+				right = paren->getSubExpr();
+			}
+			if (bop->isAdditiveOp())
+			{
+				int leftval = mStack.back().getStmtVal(left);
+				int rightval = mStack.back().getStmtVal(right);
+				if (ImplicitCastExpr *cast = dyn_cast<ImplicitCastExpr>(left))
+				{
+					if (cast->getSubExpr()->getType()->isPointerType())
+						rightval *= sizeof(int);
+				}
+				else if (ImplicitCastExpr *cast = dyn_cast<ImplicitCastExpr>(right))
+				{
+					if (cast->getSubExpr()->getType()->isPointerType())
+						leftval *= sizeof(int);
+				}
+				if (bop->getOpcode() == BO_Add)
+					val = leftval + rightval;
+				else if (bop->getOpcode() == BO_Sub)
+					val = leftval - rightval;
+			}
+			else if (bop->isMultiplicativeOp())
+			{
+				if (bop->getOpcode() == BO_Mul)
+					val = mStack.back().getStmtVal(left) * mStack.back().getStmtVal(right);
+				else if (bop->getOpcode() == BO_Div)
+					val = mStack.back().getStmtVal(left) / mStack.back().getStmtVal(right);
+				else if (bop->getOpcode() == BO_Rem)
+					val = mStack.back().getStmtVal(left) % mStack.back().getStmtVal(right);
+				mStack.back().bindStmt(bop, val);
+			}
+			else if (bop->isRelationalOp())
+			{
+				if (bop->getOpcode() == BO_LT)
+					val = mStack.back().getStmtVal(left) < mStack.back().getStmtVal(right);
+				else if (bop->getOpcode() == BO_GT)
+					val = mStack.back().getStmtVal(left) > mStack.back().getStmtVal(right);
+				else if (bop->getOpcode() == BO_LE)
+					val = mStack.back().getStmtVal(left) <= mStack.back().getStmtVal(right);
+				else if (bop->getOpcode() == BO_GE)
+					val = mStack.back().getStmtVal(left) >= mStack.back().getStmtVal(right);
+			}
+			else if (bop->isEqualityOp())
+			{
+				if (bop->getOpcode() == BO_EQ)
+					val = mStack.back().getStmtVal(left) == mStack.back().getStmtVal(right);
+				else if (bop->getOpcode() == BO_NE)
+					val = mStack.back().getStmtVal(left) != mStack.back().getStmtVal(right);
+			}
 		}
 		mStack.back().bindStmt(bop, val);
 	}
