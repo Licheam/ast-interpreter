@@ -148,7 +148,7 @@ public:
 
    virtual void Visit(Stmt *stmt)
    {
-      if (isReturned)
+      if (isReturned || !stmt)
          return;
       EvaluatedExprVisitor::Visit(stmt);
    }
