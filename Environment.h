@@ -62,9 +62,9 @@ public:
 			else if (mFreeList[i].second == addr)
 			{
 				mFreeList[i].second = addr + size;
-				if (addr+size == mValues.size())
+				if (addr + size == mValues.size())
 				{
-					mValues.resize(mFreeList.back().second-mFreeList.back().first);
+					mValues.resize(mFreeList.back().second - mFreeList.back().first);
 					mFreeList.pop_back();
 				}
 				return;
@@ -76,9 +76,9 @@ public:
 			}
 		}
 		mFreeList.push_back(std::make_pair(addr, addr + size));
-		if (addr+size == mValues.size())
+		if (addr + size == mValues.size())
 		{
-			mValues.resize(mFreeList.back().second-mFreeList.back().first);
+			mValues.resize(mFreeList.back().second - mFreeList.back().first);
 			mFreeList.pop_back();
 		}
 	}
@@ -281,6 +281,12 @@ public:
 		{
 			val = mStack.back().getStmtVal(right);
 			mStack.back().bindStmt(left, val);
+			while (isa<ParenExpr>(left))
+			{
+				ParenExpr *paren = dyn_cast<ParenExpr>(left);
+				left = paren->getSubExpr();
+			}
+
 			if (DeclRefExpr *declexpr = dyn_cast<DeclRefExpr>(left))
 			{
 				Decl *decl = declexpr->getFoundDecl();
