@@ -147,6 +147,14 @@ public:
       mEnv->uettop(expr);
    }
 
+   virtual void VisitParenExpr(ParenExpr *expr)
+   {
+      if (isReturned)
+         return;
+      VisitStmt(expr);
+      mEnv->paren(expr);
+   }
+
    virtual void VisitStmt(Stmt *stmt)
    {
       if (isReturned)

@@ -539,6 +539,13 @@ public:
 		}
 	}
 
+	void paren(ParenExpr *paren)
+	{
+		Expr *expr = paren->getSubExpr();
+		int val = mStack.back().getStmtVal(expr);
+		mStack.back().bindStmt(paren, val);
+	}
+
 	int getStmtVal(Stmt *stmt)
 	{
 		return mStack.back().getStmtVal(stmt);
