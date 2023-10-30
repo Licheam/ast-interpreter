@@ -220,6 +220,8 @@ public:
 		int val = mStack.back().getStmtVal(expr);
 		if (uop->getOpcode() == UO_Minus)
 			val = -val;
+		else if(uop->getOpcode() == UO_Deref)
+			val = mHeap.get(val);
 		mStack.back().bindStmt(uop, val);
 	}
 
@@ -245,6 +247,12 @@ public:
 				int addr = mStack.back().getStmtVal(base);
 				int idxval = mStack.back().getStmtVal(idx);
 				mStack.back().Update(addr + idxval * sizeof(int), val);
+			}
+			else if (UnaryOperator *unaryop = dyn_cast<UnaryOperator>(left))
+			{
+				assert(unaryop->getOpcode() == UO_Deref);
+				int addr = mStack.back().getStmtVal(left);
+				mHeap.Update(addr, val);
 			}
 		}
 		else if (bop->isAdditiveOp())
@@ -317,6 +325,17 @@ public:
 					int addr = mStack.back().Malloc(size * sizeof(int));
 					mStack.back().initDecl(vardecl, addr);
 				}
+				else if (vardecl->getType()->isPointerType())
+				{
+					if (vardecl->hasInit())
+					{
+						Expr *expr = vardecl->getInit();
+						int addr = mStack.back().getStmtVal(expr);
+						mStack.back().initDecl(vardecl, addr);
+					}
+					else
+						mStack.back().initDecl(vardecl, 0);
+				}
 			}
 		}
 	}
@@ -356,6 +375,12 @@ public:
 				int addr = mStack.back().getStmtVal(expr);
 				mStack.back().bindStmt(castexpr, addr);
 			}
+			else if (castexpr->getSubExpr()->getType()->isVoidPointerType())
+			{
+				Expr *expr = castexpr->getSubExpr();
+				int addr = mStack.back().getStmtVal(expr);
+				mStack.back().bindStmt(castexpr, addr);
+			}
 		}
 	}
 
@@ -377,6 +402,21 @@ public:
 			Expr *decl = callexpr->getArg(0);
 			val = mStack.back().getStmtVal(decl);
 			llvm::errs() << val;
+			return nullptr;
+		}
+		else if (callee == mMalloc)
+		{
+			Expr *expr = callexpr->getArg(0);
+			val = mStack.back().getStmtVal(expr);
+			int addr = mHeap.Malloc(val);
+			mStack.back().bindStmt(callexpr, addr);
+			return nullptr;
+		}
+		else if (callee == mFree)
+		{
+			Expr *expr = callexpr->getArg(0);
+			val = mStack.back().getStmtVal(expr);
+			// mHeap.Free(val) ;
 			return nullptr;
 		}
 		else
