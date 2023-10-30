@@ -139,6 +139,14 @@ public:
       mEnv->arrsub(expr);
    }
 
+   virtual void VisitUnaryExprOrTypeTraitExpr(UnaryExprOrTypeTraitExpr *expr)
+   {
+      if (isReturned)
+         return;
+      VisitStmt(expr);
+      mEnv->uettop(expr);
+   }
+
    virtual void VisitStmt(Stmt *stmt)
    {
       if (isReturned)

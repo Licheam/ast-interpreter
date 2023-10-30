@@ -476,6 +476,33 @@ public:
 		mStack.back().bindStmt(arrsub, val);
 	}
 
+	void uettop(UnaryExprOrTypeTraitExpr *expr)
+	{
+		if (expr->getArgumentType()->isIntegerType())
+		{
+			int val = sizeof(int);
+			mStack.back().bindStmt(expr, val);
+		}
+		else if (expr->getArgumentType()->isPointerType())
+		{
+			int val = sizeof(int *);
+			mStack.back().bindStmt(expr, val);
+		}
+		else if (const VariableArrayType *vararrtype = dyn_cast<VariableArrayType>(expr->getArgumentType()))
+		{
+			Expr *szexpr = vararrtype->getSizeExpr();
+			int size = mStack.back().getStmtVal(szexpr);
+			int val = size * sizeof(int);
+			mStack.back().bindStmt(expr, val);
+		}
+		else if (const ConstantArrayType *constarrtype = dyn_cast<ConstantArrayType>(expr->getArgumentType()))
+		{
+			int size = constarrtype->getSize().getSExtValue();
+			int val = size * sizeof(int);
+			mStack.back().bindStmt(expr, val);
+		}
+	}
+
 	int getStmtVal(Stmt *stmt)
 	{
 		return mStack.back().getStmtVal(stmt);
