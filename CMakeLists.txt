@@ -35,6 +35,7 @@ add_test(NAME test
 
 set_tests_properties(test PROPERTIES
   PASS_REGULAR_EXPRESSION "^Please Input an Integer Value : 100\n$"
+  LABELS "example"
 )
 
 set(test_data
@@ -69,6 +70,7 @@ foreach(test_info ${test_data})
   )
   set_tests_properties(${test} PROPERTIES
     PASS_REGULAR_EXPRESSION ${test_val}
+    LABELS "official"
   )
 endforeach()
 
@@ -81,6 +83,7 @@ set(extest_data
   "test015\;^200\n$"
   "test016\;^10000005\n$"
   "test017\;^55\n$"
+  "test120\;^1\n$"
 )
 
 foreach(test_info ${extest_data})
@@ -92,5 +95,6 @@ foreach(test_info ${extest_data})
   )
   set_tests_properties(${test} PROPERTIES
     PASS_REGULAR_EXPRESSION ${test_val}
+    LABELS "extra"
   )
 endforeach()

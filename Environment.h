@@ -78,12 +78,13 @@ class StackFrame
 	/// Which are either integer or addresses (also represented using an Integer value)
 	std::map<Decl *, int> mVars;
 	std::map<Stmt *, int> mExprs;
+	std::vector<char> mValues;
 	/// The current stmt
 	Stmt *mPC;
 	Heap *mHeap;
 
 public:
-	StackFrame(Heap *mHeap) : mVars(), mExprs(), mPC(), mHeap(mHeap)
+	StackFrame(Heap *mHeap) : mVars(), mExprs(), mValues(), mPC(), mHeap(mHeap)
 	{
 	}
 
@@ -125,9 +126,27 @@ public:
 	{
 		mPC = stmt;
 	}
+
 	Stmt *getPC()
 	{
 		return mPC;
+	}
+
+	int Malloc(int size)
+	{
+		int addr = mValues.size();
+		mValues.resize(addr + size);
+		return addr;
+	}
+
+	void Update(int addr, int val)
+	{
+		*(int *)&mValues[addr] = val;
+	}
+
+	int get(int addr)
+	{
+		return *(int *)&mValues[addr];
 	}
 };
 
@@ -219,6 +238,14 @@ public:
 				Decl *decl = declexpr->getFoundDecl();
 				mStack.back().bindDecl(decl, val);
 			}
+			else if (ArraySubscriptExpr *arrsub = dyn_cast<ArraySubscriptExpr>(left))
+			{
+				Expr *base = arrsub->getBase();
+				Expr *idx = arrsub->getIdx();
+				int addr = mStack.back().getStmtVal(base);
+				int idxval = mStack.back().getStmtVal(idx);
+				mStack.back().Update(addr + idxval * sizeof(int), val);
+			}
 		}
 		else if (bop->isAdditiveOp())
 		{
@@ -266,14 +293,30 @@ public:
 			Decl *decl = *it;
 			if (VarDecl *vardecl = dyn_cast<VarDecl>(decl))
 			{
-				if (vardecl->hasInit())
+				if (vardecl->getType()->isIntegerType())
 				{
-					Expr *expr = vardecl->getInit();
-					int val = mStack.back().getStmtVal(expr);
-					mStack.back().initDecl(vardecl, val);
+					if (vardecl->hasInit())
+					{
+						Expr *expr = vardecl->getInit();
+						int val = mStack.back().getStmtVal(expr);
+						mStack.back().initDecl(vardecl, val);
+					}
+					else
+						mStack.back().initDecl(vardecl, 0);
 				}
-				else
-					mStack.back().initDecl(vardecl, 0);
+				else if (const VariableArrayType *vararrtype = dyn_cast<VariableArrayType>(vardecl->getType()))
+				{
+					Expr *expr = vararrtype->getSizeExpr();
+					int size = mStack.back().getStmtVal(expr);
+					int addr = mStack.back().Malloc(size * sizeof(int));
+					mStack.back().initDecl(vardecl, addr);
+				}
+				else if (const ConstantArrayType *constarrtype = dyn_cast<ConstantArrayType>(vardecl->getType()))
+				{
+					int size = constarrtype->getSize().getSExtValue();
+					int addr = mStack.back().Malloc(size * sizeof(int));
+					mStack.back().initDecl(vardecl, addr);
+				}
 			}
 		}
 	}
@@ -288,6 +331,12 @@ public:
 			int val = mStack.back().getDeclVal(decl);
 			mStack.back().bindStmt(declref, val);
 		}
+		else if (declref->getType()->isArrayType())
+		{
+			Decl *decl = declref->getFoundDecl();
+			int addr = mStack.back().getDeclVal(decl);
+			mStack.back().bindStmt(declref, addr);
+		}
 	}
 
 	void cast(CastExpr *castexpr)
@@ -299,9 +348,17 @@ public:
 			int val = mStack.back().getStmtVal(expr);
 			mStack.back().bindStmt(castexpr, val);
 		}
+		else if (castexpr->getType()->isPointerType())
+		{
+			if (castexpr->getSubExpr()->getType()->isArrayType())
+			{
+				Expr *expr = castexpr->getSubExpr();
+				int addr = mStack.back().getStmtVal(expr);
+				mStack.back().bindStmt(castexpr, addr);
+			}
+		}
 	}
 
-	/// !TODO Support Function Call
 	Stmt *call(CallExpr *callexpr)
 	{
 		mStack.back().setPC(callexpr);
@@ -355,14 +412,14 @@ public:
 		}
 	}
 
-	Stmt *ifel(IfStmt *ifstmt)
+	void arrsub(ArraySubscriptExpr *arrsub)
 	{
-		Expr *cond = ifstmt->getCond();
-		int val = mStack.back().getStmtVal(cond);
-		if (val)
-			return ifstmt->getThen();
-		else
-			return ifstmt->getElse();
+		Expr *base = arrsub->getBase();
+		Expr *idx = arrsub->getIdx();
+		int addr = mStack.back().getStmtVal(base);
+		int idxval = mStack.back().getStmtVal(idx);
+		int val = mStack.back().get(addr + idxval * sizeof(int));
+		mStack.back().bindStmt(arrsub, val);
 	}
 
 	int getStmtVal(Stmt *stmt)

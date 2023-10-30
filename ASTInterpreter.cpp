@@ -95,9 +95,13 @@ public:
       if (isReturned)
          return;
       Visit(ifstmt->getCond());
-      if (Stmt *body = mEnv->ifel(ifstmt))
+      if (mEnv->getStmtVal(ifstmt->getCond()))
       {
-         Visit(body);
+         Visit(ifstmt->getThen());
+      }
+      else if (Stmt *elsestmt = ifstmt->getElse())
+      {
+         Visit(elsestmt);
       }
    }
 
@@ -125,6 +129,14 @@ public:
          if (isReturned)
             return;
       }
+   }
+
+   virtual void VisitArraySubscriptExpr(ArraySubscriptExpr *expr)
+   {
+      if (isReturned)
+         return;
+      VisitStmt(expr);
+      mEnv->arrsub(expr);
    }
 
    virtual void VisitStmt(Stmt *stmt)
