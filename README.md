@@ -69,7 +69,7 @@ LLVM_DIR="<path to your llvm-10 dir>" ./grade.sh optests
 
 3. llvm-10编译过慢，占用过高内存。
 
-可以参考[Dockerfile](Dockerfile)中的编译选项。其中`-DCMAKE_BUILD_TYPE=Release`将减少大量的编译时间和内存占用；`-DLLVM_TARGETS_TO_BUILD=X86`可以只编译X86架构的代码，如果你的机器不支持X86架构，可以将其改为`-DLLVM_TARGETS_TO_BUILD=AArch64`等；`-DLLVM_USE_LINKER=lld`可以使用`lld`链接器，加快编译时链接速度。也可以使用`gold`，但是需要保证系统中安装了`ldd`或者`gold`链接器。
+可以参考[Dockerfile](Dockerfile)中的编译选项。其中`-DCMAKE_BUILD_TYPE=Release`将减少大量的编译时间和内存占用；`-DLLVM_TARGETS_TO_BUILD=X86`可以只编译X86架构的代码，如果你的机器不支持X86架构，可以将其改为`-DLLVM_TARGETS_TO_BUILD=AArch64`等；`-DLLVM_USE_LINKER=lld`可以使用`lld`链接器，加快编译时链接速度。也可以使用`gold`，但是需要保证系统中安装了`lld`或者`gold`链接器。
 
 ### 测试用例
 
