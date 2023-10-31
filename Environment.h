@@ -242,6 +242,11 @@ public:
 						int val = literal->getValue().getSExtValue();
 						mHeap.bindDecl(vdecl, val);
 					}
+					else if (CharacterLiteral *literal = dyn_cast<CharacterLiteral>(expr))
+					{
+						int val = literal->getValue();
+						mHeap.bindDecl(vdecl, val);
+					}
 				}
 				else
 					mHeap.bindDecl(vdecl, 0);
@@ -258,6 +263,11 @@ public:
 	void intliteral(IntegerLiteral *literal)
 	{
 		mStack.back().bindStmt(literal, literal->getValue().getSExtValue());
+	}
+
+	void charliteral(CharacterLiteral *literal)
+	{
+		mStack.back().bindStmt(literal, literal->getValue());
 	}
 
 	void unop(UnaryOperator *uop)
@@ -390,6 +400,17 @@ public:
 					else
 						mStack.back().initDecl(vardecl, 0);
 				}
+				else if (vardecl->getType()->isCharType())
+				{
+					if (vardecl->hasInit())
+					{
+						Expr *expr = vardecl->getInit();
+						int val = mStack.back().getStmtVal(expr);
+						mStack.back().initDecl(vardecl, val);
+					}
+					else
+						mStack.back().initDecl(vardecl, 0);
+				}
 				else if (const VariableArrayType *vararrtype = dyn_cast<VariableArrayType>(vardecl->getType()))
 				{
 					Expr *expr = vararrtype->getSizeExpr();
@@ -427,6 +448,12 @@ public:
 			int val = mStack.back().getDeclVal(decl);
 			mStack.back().bindStmt(declref, val);
 		}
+		else if (declref->getType()->isCharType())
+		{
+			Decl *decl = declref->getFoundDecl();
+			int val = mStack.back().getDeclVal(decl);
+			mStack.back().bindStmt(declref, val);
+		}
 		else if (declref->getType()->isArrayType())
 		{
 			Decl *decl = declref->getFoundDecl();
@@ -448,6 +475,12 @@ public:
 	{
 		mStack.back().setPC(castexpr);
 		if (castexpr->getType()->isIntegerType())
+		{
+			Expr *expr = castexpr->getSubExpr();
+			int val = mStack.back().getStmtVal(expr);
+			mStack.back().bindStmt(castexpr, val);
+		}
+		else if (castexpr->getType()->isCharType())
 		{
 			Expr *expr = castexpr->getSubExpr();
 			int val = mStack.back().getStmtVal(expr);
@@ -548,6 +581,11 @@ public:
 		if (expr->getArgumentType()->isIntegerType())
 		{
 			int val = sizeof(int);
+			mStack.back().bindStmt(expr, val);
+		}
+		else if (expr->getArgumentType()->isCharType())
+		{
+			int val = sizeof(char);
 			mStack.back().bindStmt(expr, val);
 		}
 		else if (expr->getArgumentType()->isPointerType())

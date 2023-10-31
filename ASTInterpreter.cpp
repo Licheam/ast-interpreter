@@ -25,6 +25,13 @@ public:
       mEnv->intliteral(literal);
    }
 
+   virtual void VisitCharacterLiteral(CharacterLiteral *literal)
+   {
+      if (isReturned)
+         return;
+      mEnv->charliteral(literal);
+   }
+
    virtual void VisitUnaryOperator(UnaryOperator *uop)
    {
       if (isReturned)

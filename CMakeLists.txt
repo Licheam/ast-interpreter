@@ -94,6 +94,7 @@ set(extest_data
   "test181\;^1\n$"
   "test182\;^1020\n$"
   "test210\;^10\n$"
+  "test220\;^97\n$"
 )
 
 foreach(test_info ${extest_data})
