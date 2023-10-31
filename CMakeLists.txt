@@ -30,7 +30,7 @@ install(TARGETS ast-interpreter
 enable_testing()
 
 add_test(NAME test
-  COMMAND bash -c "echo 100 | $<TARGET_FILE:ast-interpreter> \"$(cat ${CMAKE_CURRENT_SOURCE_DIR}/tests/test.c)\""
+  COMMAND bash -c "echo 100 | $<TARGET_FILE:ast-interpreter> \"$(cat ${CMAKE_CURRENT_SOURCE_DIR}/example/test.c)\""
 )
 
 set_tests_properties(test PROPERTIES
@@ -59,6 +59,7 @@ set(test_data
   "test17\;^10\n$"
   "test18\;^1020\n$"
   "test19\;^1020\n$"
+  "test20\;^5\n$"
 )
 
 foreach(test_info ${test_data})
@@ -66,7 +67,7 @@ foreach(test_info ${test_data})
   list(GET test_info 1 test_val)
   add_test(
     NAME ${test_name}
-    COMMAND bash -c "$<TARGET_FILE:ast-interpreter> \"$(cat ${CMAKE_CURRENT_SOURCE_DIR}/tests/${test_name}.c)\""
+    COMMAND bash -c "$<TARGET_FILE:ast-interpreter> \"$(cat ${CMAKE_CURRENT_SOURCE_DIR}/test/${test_name}.c)\""
   )
   set_tests_properties(${test} PROPERTIES
     PASS_REGULAR_EXPRESSION ${test_val}
@@ -103,5 +104,18 @@ foreach(test_info ${extest_data})
   set_tests_properties(${test} PROPERTIES
     PASS_REGULAR_EXPRESSION ${test_val}
     LABELS "extra"
+  )
+endforeach()
+
+file(GLOB optional_test "${CMAKE_CURRENT_SOURCE_DIR}/optests/*.c")
+
+foreach(test_file ${optional_test})
+  get_filename_component(test_name ${test_file} NAME_WE)
+  add_test(
+    NAME ${test_name}
+    COMMAND bash -c "$<TARGET_FILE:ast-interpreter> \"$(cat ${test_file})\""
+  )
+  set_tests_properties(${test} PROPERTIES
+    LABELS "optional"
   )
 endforeach()
