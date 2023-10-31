@@ -424,7 +424,6 @@ public:
 		if (declref->getType()->isIntegerType())
 		{
 			Decl *decl = declref->getFoundDecl();
-
 			int val = mStack.back().getDeclVal(decl);
 			mStack.back().bindStmt(declref, val);
 		}
@@ -503,6 +502,7 @@ public:
 		else
 		{
 			/// You could add your code here for Function call Return
+			callee = callee->getDefinition();
 			StackFrame stack(&mHeap);
 			for (int i = 0; i < callexpr->getNumArgs(); i++)
 			{

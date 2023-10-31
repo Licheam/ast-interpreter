@@ -60,6 +60,7 @@ set(test_data
   "test18\;^1020\n$"
   "test19\;^1020\n$"
   "test20\;^5\n$"
+  "test21\;^33312826232118161311863491419242934\n$"
 )
 
 foreach(test_info ${test_data})
@@ -92,6 +93,7 @@ set(extest_data
   "test180\;^33\n$"
   "test181\;^1\n$"
   "test182\;^1020\n$"
+  "test210\;^10\n$"
 )
 
 foreach(test_info ${extest_data})
