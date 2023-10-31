@@ -61,6 +61,9 @@ set(test_data
   "test19\;^1020\n$"
   "test20\;^5\n$"
   "test21\;^33312826232118161311863491419242934\n$"
+  "test22\;^2442\n$"
+  "test23\;^2442\n$"
+  "test24\;^2442\n$"
 )
 
 foreach(test_info ${test_data})
@@ -70,7 +73,7 @@ foreach(test_info ${test_data})
     NAME ${test_name}
     COMMAND bash -c "$<TARGET_FILE:ast-interpreter> \"$(cat ${CMAKE_CURRENT_SOURCE_DIR}/test/${test_name}.c)\""
   )
-  set_tests_properties(${test} PROPERTIES
+  set_tests_properties(${test_name} PROPERTIES
     PASS_REGULAR_EXPRESSION ${test_val}
     LABELS "official"
   )
@@ -95,6 +98,8 @@ set(extest_data
   "test182\;^1020\n$"
   "test210\;^10\n$"
   "test220\;^97\n$"
+  "test221\;^4243\n$"
+  "test222\;^4243\n$"
 )
 
 foreach(test_info ${extest_data})
@@ -104,7 +109,7 @@ foreach(test_info ${extest_data})
     NAME ${test_name}
     COMMAND bash -c "$<TARGET_FILE:ast-interpreter> \"$(cat ${CMAKE_CURRENT_SOURCE_DIR}/extests/${test_name}.c)\""
   )
-  set_tests_properties(${test} PROPERTIES
+  set_tests_properties(${test_name} PROPERTIES
     PASS_REGULAR_EXPRESSION ${test_val}
     LABELS "extra"
   )
@@ -118,7 +123,7 @@ foreach(test_file ${optional_test})
     NAME ${test_name}
     COMMAND bash -c "$<TARGET_FILE:ast-interpreter> \"$(cat ${test_file})\""
   )
-  set_tests_properties(${test} PROPERTIES
+  set_tests_properties(${test_name} PROPERTIES
     LABELS "optional"
   )
 endforeach()

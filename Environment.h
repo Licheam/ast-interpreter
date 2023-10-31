@@ -86,25 +86,71 @@ public:
 	{
 		*(int *)&mValues[addr] = val;
 	}
+	void Update(int addr, char val)
+	{
+		*(char *)&mValues[addr] = val;
+	}
 
-	int get(int addr)
+	int getInt(int addr)
 	{
 		return *(int *)&mValues[addr];
+	}
+
+	char getChar(int addr)
+	{
+		return *(char *)&mValues[addr];
 	}
 
 	void bindDecl(Decl *decl, int val)
 	{
 		if (mVars.find(decl) == mVars.end())
 		{
-			int addr = Malloc(sizeof(int));
+			if (VarDecl *vardecl = dyn_cast<VarDecl>(decl))
+			{
+				if (vardecl->getType()->isCharType())
+				{
+					mVars[decl] = Malloc(sizeof(char));
+					Update(mVars[decl], (char)val);
+				}
+				else if (vardecl->getType()->isIntegerType())
+				{
+					mVars[decl] = Malloc(sizeof(int));
+					Update(mVars[decl], val);
+				}
+				else if (vardecl->getType()->isPointerType())
+				{
+					mVars[decl] = Malloc(sizeof(int *));
+					Update(mVars[decl], val);
+				}
+			}
 		}
-		Update(mVars[decl], val);
+		else
+		{
+			if (VarDecl *vardecl = dyn_cast<VarDecl>(decl))
+			{
+				if (vardecl->getType()->isCharType())
+					Update(mVars[decl], (char)val);
+				else if (vardecl->getType()->isIntegerType())
+					Update(mVars[decl], val);
+				else if (vardecl->getType()->isPointerType())
+					Update(mVars[decl], val);
+			}
+		}
 	}
 
 	int getDeclVal(Decl *decl)
 	{
 		assert(mVars.find(decl) != mVars.end());
-		return get(mVars[decl]);
+		if (VarDecl *vardecl = dyn_cast<VarDecl>(decl))
+		{
+			if (vardecl->getType()->isCharType())
+				return getChar(mVars[decl]);
+			else if (vardecl->getType()->isIntegerType())
+				return getInt(mVars[decl]);
+			else if (vardecl->getType()->isPointerType())
+				return getInt(mVars[decl]);
+		}
+		assert(false);
 	}
 };
 
@@ -277,7 +323,15 @@ public:
 		if (uop->getOpcode() == UO_Minus)
 			val = -val;
 		else if (uop->getOpcode() == UO_Deref)
-			val = mHeap.get(val);
+		{
+			assert(expr->getType()->isPointerType());
+			if (expr->getType()->getPointeeType()->isCharType())
+				val = mHeap.getChar(val);
+			else if (expr->getType()->getPointeeType()->isIntegerType())
+				val = mHeap.getInt(val);
+			else if (expr->getType()->getPointeeType()->isPointerType())
+				val = mHeap.getInt(val);
+		}
 		mStack.back().bindStmt(uop, val);
 	}
 
@@ -296,7 +350,6 @@ public:
 				ParenExpr *paren = dyn_cast<ParenExpr>(left);
 				left = paren->getSubExpr();
 			}
-
 			if (DeclRefExpr *declexpr = dyn_cast<DeclRefExpr>(left))
 			{
 				Decl *decl = declexpr->getFoundDecl();
@@ -315,7 +368,12 @@ public:
 				assert(unaryop->getOpcode() == UO_Deref);
 				Expr *expr = unaryop->getSubExpr();
 				int addr = mStack.back().getStmtVal(expr);
-				mHeap.Update(addr, val);
+				if (expr->getType()->getPointeeType()->isCharType())
+					mHeap.Update(addr, (char)val);
+				else if (expr->getType()->getPointeeType()->isIntegerType())
+					mHeap.Update(addr, val);
+				else if (expr->getType()->getPointeeType()->isPointerType())
+					mHeap.Update(addr, val);
 			}
 		}
 		else
@@ -334,16 +392,25 @@ public:
 			{
 				int leftval = mStack.back().getStmtVal(left);
 				int rightval = mStack.back().getStmtVal(right);
-				if (ImplicitCastExpr *cast = dyn_cast<ImplicitCastExpr>(left))
+				if (left->getType()->isPointerType())
 				{
-					if (cast->getSubExpr()->getType()->isPointerType())
+					if (left->getType()->getPointeeType()->isCharType())
+						rightval *= sizeof(char);
+					else if (left->getType()->getPointeeType()->isIntegerType())
 						rightval *= sizeof(int);
+					else if (left->getType()->getPointeeType()->isPointerType())
+						rightval *= sizeof(int *);
 				}
-				else if (ImplicitCastExpr *cast = dyn_cast<ImplicitCastExpr>(right))
+				else if (right->getType()->isPointerType())
 				{
-					if (cast->getSubExpr()->getType()->isPointerType())
+					if (right->getType()->getPointeeType()->isCharType())
+						leftval *= sizeof(char);
+					else if (right->getType()->getPointeeType()->isIntegerType())
 						leftval *= sizeof(int);
+					else if (right->getType()->getPointeeType()->isPointerType())
+						leftval *= sizeof(int *);
 				}
+
 				if (bop->getOpcode() == BO_Add)
 					val = leftval + rightval;
 				else if (bop->getOpcode() == BO_Sub)
@@ -389,7 +456,7 @@ public:
 			Decl *decl = *it;
 			if (VarDecl *vardecl = dyn_cast<VarDecl>(decl))
 			{
-				if (vardecl->getType()->isIntegerType())
+				if (vardecl->getType()->isCharType())
 				{
 					if (vardecl->hasInit())
 					{
@@ -400,7 +467,7 @@ public:
 					else
 						mStack.back().initDecl(vardecl, 0);
 				}
-				else if (vardecl->getType()->isCharType())
+				else if (vardecl->getType()->isIntegerType())
 				{
 					if (vardecl->hasInit())
 					{
@@ -442,13 +509,13 @@ public:
 	void declref(DeclRefExpr *declref)
 	{
 		mStack.back().setPC(declref);
-		if (declref->getType()->isIntegerType())
+		if (declref->getType()->isCharType())
 		{
 			Decl *decl = declref->getFoundDecl();
 			int val = mStack.back().getDeclVal(decl);
 			mStack.back().bindStmt(declref, val);
 		}
-		else if (declref->getType()->isCharType())
+		else if (declref->getType()->isIntegerType())
 		{
 			Decl *decl = declref->getFoundDecl();
 			int val = mStack.back().getDeclVal(decl);
@@ -474,13 +541,13 @@ public:
 	void cast(CastExpr *castexpr)
 	{
 		mStack.back().setPC(castexpr);
-		if (castexpr->getType()->isIntegerType())
+		if (castexpr->getType()->isCharType())
 		{
 			Expr *expr = castexpr->getSubExpr();
 			int val = mStack.back().getStmtVal(expr);
 			mStack.back().bindStmt(castexpr, val);
 		}
-		else if (castexpr->getType()->isCharType())
+		else if (castexpr->getType()->isIntegerType())
 		{
 			Expr *expr = castexpr->getSubExpr();
 			int val = mStack.back().getStmtVal(expr);
@@ -578,14 +645,14 @@ public:
 
 	void uettop(UnaryExprOrTypeTraitExpr *expr)
 	{
-		if (expr->getArgumentType()->isIntegerType())
-		{
-			int val = sizeof(int);
-			mStack.back().bindStmt(expr, val);
-		}
-		else if (expr->getArgumentType()->isCharType())
+		if (expr->getArgumentType()->isCharType())
 		{
 			int val = sizeof(char);
+			mStack.back().bindStmt(expr, val);
+		}
+		else if (expr->getArgumentType()->isIntegerType())
+		{
+			int val = sizeof(int);
 			mStack.back().bindStmt(expr, val);
 		}
 		else if (expr->getArgumentType()->isPointerType())
