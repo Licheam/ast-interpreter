@@ -71,7 +71,7 @@ foreach(test_info ${test_data})
   list(GET test_info 1 test_val)
   add_test(
     NAME ${test_name}
-    COMMAND bash -c "$<TARGET_FILE:ast-interpreter> \"$(cat ${CMAKE_CURRENT_SOURCE_DIR}/test/${test_name}.c)\""
+    COMMAND bash -c "$<TARGET_FILE:ast-interpreter> \"$(cat ${CMAKE_CURRENT_SOURCE_DIR}/tests/${test_name}.c)\""
   )
   set_tests_properties(${test_name} PROPERTIES
     PASS_REGULAR_EXPRESSION ${test_val}
