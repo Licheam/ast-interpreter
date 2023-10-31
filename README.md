@@ -29,7 +29,7 @@ docker pull lczxxx123/llvm_10_hw:0.2
 ```bash
 mkdir build
 cd build
-cmake -DLLVM_DIR="path to your llvm-10" ..
+cmake -DLLVM_DIR="<path to your llvm-10 dir>" ..
 make
 ```
 
@@ -48,9 +48,9 @@ make test
 ### 打分
 
 ```bash
-LLVM_DIR="path to your llvm-10" ./grade.sh
-LLVM_DIR="path to your llvm-10" ./grade.sh extests
-LLVM_DIR="path to your llvm-10" ./grade.sh optests
+LLVM_DIR="<path to your llvm-10 dir>" ./grade.sh
+LLVM_DIR="<path to your llvm-10 dir>" ./grade.sh extests
+LLVM_DIR="<path to your llvm-10 dir>" ./grade.sh optests
 ```
 
 ## Tips
