@@ -75,7 +75,7 @@ LLVM_DIR="<path to your llvm-10 dir>" ./grade.sh optests
 
 今年作业本身提供的测试用例存放在[tests](tests)目录下。我在做作业过程中额外增加了一些子测试用例存放在[extests](extests)目录下。额外我收集了一些来自前人的测试用例存放在[optests](optests)目录下。
 
-我修改了[CMakeList.txt](CMakeList.txt)以支持自动化测试。这个测试里对比了你的输出和我提前设置的标准输出，如果不一致则会输出错误信息（[optests](optests)里并没设置标准输出）。你可以通过`make test`或`ctest`来运行所有测试用例。如果你想运行某个子测试用例，可以通过`ctest -R <test name>`来运行，具体可以参考[CMakeList.txt](CMakeList.txt)中的`add_test`部分。
+我修改了[CMakeLists.txt](CMakeLists.txt)以支持自动化测试。这个测试里对比了你的输出和我提前设置的标准输出，如果不一致则会输出错误信息（[optests](optests)里并没设置标准输出）。你可以通过`make test`或`ctest`来运行所有测试用例。如果你想运行某个子测试用例，可以通过`ctest -R <test name>`来运行，具体可以参考[CMakeLists.txt](CMakeLists.txt)中的`add_test`部分。
 
 我也从前人那里收集到了自动化评分脚本，你可以通过`./grade.sh`来运行[tests](tests)目录下所有测试用例。这个脚本将输出与`gcc`编译器实际编译的程序输出进行对比，如果不一致则会输出错误信息。如果你想运行特定文件夹，可以通过`./grade.sh <test folder>`来运行，具体可以参考[grade.sh](grade.sh)。
 
