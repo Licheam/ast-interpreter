@@ -1,4 +1,5 @@
-# AST Interpreter (Advanced Compiling Techniques Assignment 1)
+# AST Interpreter
+UCAS Advanced Compiling Techniques Assignment 1
 
 基于llvm-10的Clang语法树实现的简单C语言解释器，见[作业要求](#作业要求)。
 
